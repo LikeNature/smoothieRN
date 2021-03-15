@@ -20,3 +20,14 @@ npm start
 
 ## Expo 설치하고 사용하기
 
+```bash
+npm install -g expo-cli
+```
+
+```bash
+expo init AwesomeProject
+
+cd AwesomeProject
+npm start # you can also use: expo start
+```
+
