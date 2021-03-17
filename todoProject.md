@@ -1,6 +1,6 @@
 # todoProject
 
-![](C:\Users\user\Documents\GitHub\reactNativeApp\uml.PNG)
+![](.\uml.PNG)
 
 ## 1. Context API
 
@@ -530,15 +530,24 @@ import TodoInput from '/TodoInput';
 interface Props {}
 
 const AddTodo = () => {
-    const [showInput, setShowInput] = useState<boolean>(false);
+    const [showInput, setShowInput] = useState<boolean>(false); // AddButton 눌렀을 때 TodoInput 표시 
     return (
         <>
             <AddButton onPress={() => setShowInput} />
-            {showInput && <TodoInput hideToolInput={()=>setShowInput(false)} />}
+            {showInput && <TodoInput hideTodoInput={()=>setShowInput(false)} />}
         </>
     );
 };
 
 export default AddTdoo;
+```
+
+#### 12) AddButtom 컴포넌트
+
+```tsx
+import React from 'react';
+import Styled from 'styled-components/native';
+
+
 ```
 
