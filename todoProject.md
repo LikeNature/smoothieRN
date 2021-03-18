@@ -24,6 +24,9 @@ react-native init toDoList
 cd toDoList
 npm install --save styled-components
 npm install --save-dev typescript @types/react @types/react-native @types/styled-components babel-plugin-root-import
+# 디버깅 도구 , 설치안했을 경우 설치
+# https://www.npmjs.com/package/react-devtools 
+npm install -g react-devtools
 ```
 
 ```json
