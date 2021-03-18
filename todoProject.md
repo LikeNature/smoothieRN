@@ -210,10 +210,81 @@ react-native link @react-native-community/async-storage
 
 - @types/index.d.ts 파일을 만들고 해당 파일 안에 타입을 정의하면 프로젝트 전반에 걸쳐 타입 사용가능
 
+```tsx
+interface ITodoListContext {
+    todoList: Array<string>;
+    addTodoList: (todo: string) => void;
+    removeTodoList: (index: number) => void;
+}
+```
+
+
+
 - 실제 Context 파일 : \toDoList1\src\TodoListContext\index.tsx
 
-- createContext 로 Context를 생성, useState로 생성한 State 데이터를 Context 안에 저장할 예정
+```tsx
+import React, {createContext, useState, useEffect} from 'react';
+import AsyncStorage from '@react-native-community/async-storage';
 
+interface Props {
+  children: JSX.Element | Array<JSX.Element>;
+}
+
+const TodoListContext = createContext<ITodoListContext>({
+  todoList: [],
+  addTodoList: (todo: string): void => {},
+  removeTodoList: (index: number): void => {},
+});
+
+const TodoListContextProvider = ({children}: Props) => {
+  const [todoList, setTodoList] = useState<Array<string>>([]);
+
+  const addTodoList = (todo: string): void => {
+    const list = [...todoList, todo];
+    setTodoList(list);
+    AsyncStorage.setItem('todoList', JSON.stringify(list));
+  };
+
+  const removeTodoList = (index: number): void => {
+    let list = [...todoList];
+    list.splice(index, 1);
+    setTodoList(list);
+    AsyncStorage.setItem('todoList', JSON.stringify(list));
+  };
+
+  const initData = async () => {
+    try {
+      const list = await AsyncStorage.getItem('todoList');
+      if (list !== null) {
+        setTodoList(JSON.parse(list));
+      }
+    } catch (e) {
+      console.log(e);
+    }
+  };
+
+  useEffect(() => {
+    initData();
+  }, []);
+
+  return (
+    <TodoListContext.Provider
+      value={{
+        todoList,
+        addTodoList,
+        removeTodoList,
+      }}>
+      {children}
+    </TodoListContext.Provider>
+  );
+};
+
+export {TodoListContextProvider, TodoListContext};
+```
+
+
+
+- createContext 로 Context를 생성, useState로 생성한 State 데이터를 Context 안에 저장할 예정
 - createContext 함수 초기값으로 데이터 추가위한 addTodoList 함수, 삭제를 위한 remvoeTodoList 할당
 
 - 실제 구현은 Context 의 provider 컴포넌트에서 구현
@@ -324,25 +395,24 @@ const App = () => {
 ```tsx
 import React from 'react';
 import Styled from 'styled-components/native';
+
 import TodoListView from './TodoListView';
 import AddTodo from './AddTodo';
 
 const Container = Styled.View`
-    flex: 1;
+  flex: 1;
 `;
 
 interface Props {}
 
-const Todo = ({ } : Props) => {
-    return (
-        <Container>
-            <TodoListView>
-            <AddTodo />
-            </TodoListView>
-        </Container>
-    );
+const Todo = ({  }: Props) => {
+  return (
+    <Container>
+      <TodoListView />
+      <AddTodo />
+    </Container>
+  );
 };
-
 export default Todo;
 ```
 
@@ -358,21 +428,19 @@ import Header from './Header';
 import TodoList from './TodoList';
 
 const Container = Styled.SafeAreaView`
-    flex: 1;
+  flex: 1;
 `;
 
 interface Props {}
 
-const TodoListView = ({ }: Props) => {
-    return (
-        <Container>
-            <Header>
-            <TodoList />
-            </Header>
-        </Container>
-    );
+const TodoListView = ({  }: Props) => {
+  return (
+    <Container>
+      <Header />
+      <TodoList />
+    </Container>
+  );
 };
-
 export default TodoListView;
 ```
 
@@ -382,27 +450,25 @@ export default TodoListView;
 import React from 'react';
 import Styled from 'styled-components/native';
 
-const Container = Styled.SafeAreaView`
-    height: 40px;
-    justify-content: center;
-    align-items: center;
+const Container = Styled.View`
+  height: 40px;
+  justify-content: center;
+  align-items: center;
 `;
-
 const TitleLabel = Styled.Text`
-    font-size: 24px;
-    font-weight: bold;
+  font-size: 24px;
+  font-weight: bold;
 `;
 
 interface Props {}
 
-const Header = ({ }: Props) => {
- return (
-     <Container>
-        <TitleLabel>Todo List</TitleLabel>
-     </Container>
- );   
+const Header = ({  }: Props) => {
+  return (
+    <Container>
+      <TitleLabel>Todo List App</TitleLabel>
+    </Container>
+  );
 };
-
 export default Header;
 ```
 
@@ -433,10 +499,11 @@ const TodoList = ({ }: Props ) => {
         <Container
             data={todoList}  // 리스트 뷰에표시할 데이터 배열
             keyExtractor={(item, index) = > {  // keyExtractor: 컴포넌트 키값 설정, FlatList에서 반복적으로 표시하는 Item에 키값 설정하기 위한 Props
-                // return `todo-${index}`;
+                // TODO 아래 주석 해제
+                //return `todo-${index}`;
             }}
             ListEmptyComponent = { <EmptyItem />}  // 주어진 배열에 데이터 없을 경우 표시되는 컴포넌트
-            renderItem={() => ( 	// 주어진 배열에 데이터 사용해 반복적으로 표시될 컴포넌트
+            renderItem={({item, index}) => ( 	// 주어진 배열에 데이터 사용해 반복적으로 표시될 컴포넌트
                 <TodoItem 
                     text={item as string}
                     onDelete={() => removeTodoList(index)}
@@ -458,23 +525,20 @@ import React from 'react';
 import Styled from 'styled-components/native';
 
 const Container = Styled.View`
-    flex: 1,
-    align-items: center;
-    justify-content: center;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
 `;
-
 const Label = Styled.Text``;
-
 interface Props {}
 
-const EmptyItem = ({ }: Props) => {
-    return (
-        <Container>
-            <Label>하단에 "+" 버튼을 눌러 새로운 할일 등록</Label>
-        </Container>
-    );
+const EmptyItem = ({  }: Props) => {
+  return (
+    <Container>
+      <Label>하단에 "+" 버튼을 눌러 새로운 할일을 등록해 보세요.</Label>
+    </Container>
+  );
 };
-
 export default EmptyItem;
 ```
 
@@ -485,40 +549,37 @@ import React from 'react';
 import Styled from 'styled-components/native';
 
 const Container = Styled.View`
-    flex-direction: row;
-    background-color: #FFF;
-    margin: 4px 16px;
-    padding: 8px 16px;
-    border-radius: 8px;
-    align-items: center;
+  flex-direction: row;
+  background-color: #FFF;
+  margin:4px 16px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  align-items: center;
 `;
-
 const Label = Styled.Text`
-    flex: 1;
+  flex: 1;
 `;
-
 const DeleteButton = Styled.TouchableOpacity``;
 const Icon = Styled.Image`
-    width: 24px;
-    height: 24px;
+  width: 24px;
+  height: 24px;
 `;
 
 interface Props {
-    text: string;			// TodoList 컴포넌트로부터 할일 데이터 전달받은 매개변수 설정
-    onDelete: () => void;		// 삭제함수 전달받기위한 설정
+  text: string;
+  onDelete: () => void;
 }
 
-const TodoItem = () => {
-    return (
-        <Container>
-            <Label>{text}</Label>		<!-- 할일 데이터 전달받아 화면에 표시 -->
-            <DeleteButton onPress={onDelete}>		<!-- 삭제함수 삽입  -->
-                <Icon source={require('~/Assets/Images/remove.png')}/>
-            </DeleteButton>
-        </Container>
-    );
+const TodoItem = ({ text, onDelete }: Props) => {
+  return (
+    <Container>
+      <Label>{text}</Label>
+      <DeleteButton onPress={onDelete}>
+        <Icon source={require('~/Assets/Images/remove.png')} />
+      </DeleteButton>
+    </Container>
+  );
 };
-
 export default TodoItem;
 ```
 
@@ -535,7 +596,7 @@ interface Props {}
 const AddTodo = () => {
     const [showInput, setShowInput] = useState<boolean>(false); // AddButton 눌렀을 때 TodoInput 표시 
     return (
-        <>
+        <>		// fragment 약식 표현
             <AddButton onPress={() => setShowInput} />
             {showInput && <TodoInput hideTodoInput={()=>setShowInput(false)} />}
         </>
@@ -551,6 +612,167 @@ export default AddTdoo;
 import React from 'react';
 import Styled from 'styled-components/native';
 
+const Container = Styled.SafeAreaView`
+    position: absolute;
+    bottom: 50;
+    align-self: center;
+    justify-content: flex-end;
+`;
 
+const ButtonContainer = Styled.TouchableOpacity`
+    box-shadow: 4px 4px 8px #999;
+`;
+
+const Icon = Styled.Image``;
+
+interface Props {
+    onPress?: () => void;
+}
+
+const AddButton = ({onPress}: Props) => {
+    return(
+        <Container>
+            <ButtonContainer onPress={onPress}>
+                <Icon source={require('~/Assets/Images/add.png')} />
+            </ButtonContainer>
+        </Container>
+    );
+};
+
+export default AddButton;
 ```
 
+#### 13) TodoInput 컴포넌트
+
+```tsx
+import React from 'react';
+import {Platform} from 'react-native';
+import Styled from 'styled-components/native';
+
+import Background from './Background';
+import TextInput from './TextInput';
+
+// 아래 컴포넌트는 키보드가 활성화되면서 입력창을 가리기는 문제를 해결하기 위한 옵션 
+const Container = Styled.KeyboardAvoidingView` 
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    justify-content: flex-end;
+`;
+
+interface Props {
+    hideTodoInput: () => void;  // todoinput 숨기기위해 부모 컴포넌트 AddTodo 의 hideTodoInput 함수 hideTodoInput={()=>setShowInput(false)} 를 전달받음
+};
+
+const TodoInput = ({hideTodoInput}: Props) => {
+    return (
+        <Container behavior={Platform.OS === 'ios' ? 'padding' : undefined}> <!-- ios 인경우만 작동 -->
+            <Background onPress={hideTodoInput} />		<!-- 선택했을 때 숨김 -->
+            <TextInput hideTodoInput={hideTodoInput} /> <!-- 입력했을 때 숨김 -->
+        </Container>
+    );
+};
+
+export default TodoInput;
+```
+
+##### 14) Background 컴포넌트
+
+```tsx
+import React from 'react';
+import Styled from 'styled-components/native';
+
+const Container = Styled.TouchableWithoutFeedback`
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+`;
+
+const BlackBackground = Styled.View`
+    background-color = #000;
+    opacity: 0.3;
+    width: 100%;
+    height: 100%;
+`;
+
+interface Props {
+    onPress: () => void;
+}
+
+const Background = ({onPress}: Props) => {
+    return(
+        <Container onPress={onPress}>
+            <BlackBackground />
+        </Container>
+    );
+};
+
+export default Background;
+```
+
+##### 15) TextInput 컴포넌트
+
+```tsx
+import React, {useContext} from 'react';
+import Styled from 'styled-components/native';
+
+import { TodoListContext } from '~/Context/TodoListContext';
+
+const Input = Styled.TextInput`
+    width: 100%;
+    height: 40px;
+    background-color: #FFF;
+    padding: 0px 8px;
+`;
+
+interface Props {
+    hideTodoInput: () => void;
+};
+
+const TextInput = ({hideTodoInput}: Props) => {
+    const {addTodoList} = useContext<ITodoListContext>(TodoListContext); // Context 사용설정, 전역 함수 할당
+    return(
+        <Input
+            autoFocus={true}
+            autoCapitalize="none"
+            autoCorrect={false}
+            placeholder="할 일을 입력한다"
+            returnKeyType="done"
+            onSubmitEditing = {({nativeEvent}) => { 
+         <!-- 키보드 "완료" 버튼 눌렀을 때 호출되는 TextInput의 함수 
+			 onSubmitEditing = {({nativeEvent}) => {
+                addTodoList(nativeEvent.text);
+                hideTodoInput();
+         }}  -->
+                
+                addTodoList(nativeEvent.text);
+         <!-- TodoListContext 의 함수를 호출해 text 저장 
+			   const addTodoList = (todo: string): void => {
+                const list = [...todoList, todo];
+                setTodoList(list);
+                AsyncStorage.setItem('todoList', JSON.stringify(list));
+              };
+         }}  -->
+                hideTodoInput();  <!-- TodoInput 컴포넌트 숨기기 -->
+            }}
+        />
+    );
+};
+
+export default TextInput;
+```
+
+### 16) 결과 확인
+
+```bash
+npm run ios
+# or
+npm run android
+```
+
+- 본 프로젝트는 AsyncStorage 를 사용해 데이터 저장
+- AsyncStorage 는 로그인이후, 서버로부터 전달받은 토큰을 저장하거나 정보를 캐싱하는데 사용됨
