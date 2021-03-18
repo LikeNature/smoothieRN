@@ -57,10 +57,9 @@ npm install -g react-devtools
 }
 ```
 
-- 절대 경로로 컴포넌트 추가
-  - babel.config.js
-
 ```js
+// babel.config.js 절대 경로로 컴포넌트 추가하기 위한 설정
+
 /**
  * Metro configuration for React Native
  * https://github.com/facebook/react-native
