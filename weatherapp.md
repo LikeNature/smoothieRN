@@ -107,12 +107,14 @@ doSomething()
 
 ```c++
 react-native init weatherapp
+또는
+react-native init weatherapp1 --template typescript
 ```
 
 ```bash
 cd weatherapp
 npm install --save styled-components
-npm install --save-dev typescript @types/react @types/react-native @types/styled-components babel-plugin-root-import
+npm install typescript @types/react @types/react-native @types/styled-components babel-plugin-root-import --save-dev
 ```
 
 ```json
@@ -145,13 +147,6 @@ npm install --save-dev typescript @types/react @types/react-native @types/styled
 
 ```js
 // 절대 경로로 컴포넌트 추가하기 위한 설정
-/**
- * Metro configuration for React Native
- * https://github.com/facebook/react-native
- *
- * @format
- */
-
 module.exports = {
   presets: ['module:metro-react-native-babel-preset'],
   // 이하 추가
@@ -337,3 +332,13 @@ npm start --reset-cache //메트로 서버 캐시 초기화
 
 1. *npm install --save-dev babel-plugin-styled-components*
 2. create file: **.babelrc** with content: `{ "presets": ["next/babel"], "plugins": [["styled-components", { "ssr": true }]] }`
+
+
+
+- vscode 새로고침 단축키  : ctrl + R => alt+m 변경
+  - File -> Preferences -> Keyboard Shotcuts
+    - workbench.action.reloadWindow
+      -  "when": "isDevelopment" => delete
+
+
+
