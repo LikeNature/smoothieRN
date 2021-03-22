@@ -602,6 +602,365 @@ type MovieNaviParamList = {
 ### 12) BigCatalogList 컴포넌트
 
 ```tsx
+// src\Screens\MovieHome\BigCatalogList\index.tsx
 
+import React, {useState, useEffect} from 'react';
+import {FlatList} from 'react-native';
+import Styled from 'styled-components/native';
+
+import BigCatalog from '~/Components/BigCatalog';
+
+const Container = Styled.View`
+    height: 300px;
+    margin-bottom: 8px;
+`;
+
+interface Props {
+  url: string;
+  onPress: (id: number) => void;
+}
+
+const BigCatalogList = ({url, onPress}: Props) => {
+  const [data, setData] = useState<Array<IMovie>>([]);
+
+  useEffect(() => {
+    fetch(url)
+      .then((response) => response.json())
+      .then((json) => {
+        console.log(json);
+        setData(json.data.movies);
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+  }, []);
+
+  return (
+    <Container>
+      <FlatList
+        horizontal={true}
+        pagingEnabled={true}
+        data={data}
+        keyExtractor={(item, index) => {
+          return `bigScreen-${index}`;
+        }}
+        renderItem={({item, index}) => (
+          <BigCatalog
+            id={(item as IMovie).id}
+            image={(item as IMovie).large_cover_image}
+            year={(item as IMovie).year}
+            title={(item as IMovie).title}
+            genres={(item as IMovie).genres}
+            onPress={onPress}
+          />
+        )}
+      />
+    </Container>
+  );
+};
+
+export default BigCatalogList;
 ```
+
+### 13) BigCatalog 컴포넌트
+
+```tsx
+// src\Components\BigCatalog\indes.tsx
+
+import React from 'react';
+import {Dimensions} from 'react-native';
+import Styled from 'styled-components/native';
+
+const Container = Styled.TouchableOpacity``;
+const CatalogImage = Styled.Image``;
+const InfoContainer = Styled.View`
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  align-items: flex-start;
+`;
+const LabelYear = Styled.Text`
+  background-color: #E70915;
+  color: #FFFFFF;
+  padding: 4px 8px;
+  margin-left: 4px;
+  margin-bottom: 4px;
+  font-weight: bold;
+  border-radius: 4px;
+`;
+const SubInfoContainer = Styled.View`
+`;
+const Background = Styled.View`
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  background-color: #141414;
+  opacity: 0.9;
+`;
+const LabelTitle = Styled.Text`
+  font-size: 18px;
+  font-weight: bold;
+  color: #FFFFFF;
+  padding: 8px 16px 4px 16px;
+`;
+const LabelGenres = Styled.Text`
+  font-size: 12px;
+  color: #FFFFFF;
+  padding: 4px 16px 8px 16px;
+`;
+
+interface Props {
+  id: number;
+  image: string;
+  year: number;
+  title: string;
+  genres: Array<string>;
+  onPress?: (id: number) => void;
+}
+
+const BigCatalog = ({id, image, year, title, genres, onPress}: Props) => {
+  return (
+    <Container
+      activeOpacity={1}
+      onPress={() => {
+        if (onPress && typeof onPress === 'function') {
+          onPress(id);
+        }
+      }}>
+      <CatalogImage
+        source={{uri: image}}
+        style={{width: Dimensions.get('window').width, height: 300}}
+      />
+      <InfoContainer>
+        <LabelYear>{year}년 개봉</LabelYear>
+        <SubInfoContainer>
+          <Background />
+          <LabelTitle>{title}</LabelTitle>
+          <LabelGenres>{genres.join(', ')}</LabelGenres>
+        </SubInfoContainer>
+      </InfoContainer>
+    </Container>
+  );
+};
+
+export default BigCatalog;
+```
+
+### 14) SubCatalogList 컴포넌트
+
+```tsx
+// src\Screens\MovieHome\SubCatalogList\indes.tsx
+
+import React, {useState, useEffect} from 'react';
+import {FlatList} from 'react-native';
+
+import Styled from 'styled-components/native';
+
+const Container = Styled.View`
+  margin: 8px 0px;
+`;
+const InfoContainer = Styled.View`
+  flex-direction: row;
+  justify-content: space-between;
+  padding: 8px 16px;
+`;
+const Title = Styled.Text`
+  font-size: 16px;
+  color: #FFFFFF;
+  font-weight: bold;
+`;
+const CatalogContainer = Styled.View`
+  height: 201px;
+`;
+const CatalogImageContainer = Styled.TouchableOpacity`
+  padding: 0px 4px;
+`;
+const CatalogImage = Styled.Image`
+`;
+
+interface Props {
+  title: string;
+  url: string;
+  onPress: (id: number) => void;
+}
+
+const SubCatalogList = ({title, url, onPress}: Props) => {
+  const [data, setData] = useState<Array<IMovie>>([]);
+
+  useEffect(() => {
+    fetch(url)
+      .then((response) => response.json())
+      .then((json) => {
+        console.log(json);
+        setData(json.data.movies);
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+  }, []);
+
+  return (
+    <Container>
+      <InfoContainer>
+        <Title>{title}</Title>
+      </InfoContainer>
+      <CatalogContainer>
+        <FlatList
+          horizontal={true}
+          data={data}
+          keyExtractor={(item, index) => {
+            return `catalogList-${(item as IMovie).id}-${index}`;
+          }}
+          renderItem={({item, index}) => (
+            <CatalogImageContainer
+              activeOpacity={1}
+              onPress={() => {
+                onPress((item as IMovie).id);
+              }}>
+              <CatalogImage
+                source={{uri: (item as IMovie).large_cover_image}}
+                style={{width: 136, height: 201}}
+              />
+            </CatalogImageContainer>
+          )}
+        />
+      </CatalogContainer>
+    </Container>
+  );
+};
+
+export default SubCatalogList;
+```
+
+### 15) 영화 상세 정보 데이터타입
+
+```tsx
+// src\Screens\MovieDetail\@types\index.d.ts
+
+interface ICast {
+  name: string;
+  character_name: string;
+  url_small_image: string;
+}
+interface IMovieDetail {
+  id: number;
+  title: string;
+  title_english: string;
+  title_long: string;
+  cast: Array<ICast>;
+  description_full: string;
+  description_intro: string;
+  genres: Array<string>;
+  large_cover_image: string;
+  large_screenshot_image1: string;
+  large_screenshot_image2: string;
+  large_screenshot_image3: string;
+  like_count: number;
+  rating: number;
+  runtime: number;
+  year: number;
+}
+```
+
+### 16) MovieDetail 컴포넌트
+
+```tsx
+import React, {useState, useEffect} from 'react';
+import Styled from 'styled-components/native';
+import {RouteProp} from '@react-navigation/native';
+
+import Loading from '~/Screens/Loading';
+import BigCatalog from '~/Components/BigCatalog';
+import CastList from './CastList';
+import ScreenShotList from './ScreenShotList';
+
+const Container = Styled.ScrollView`
+  flex: 1;
+  background-color: #141414;
+`;
+const ContainerTitle = Styled.Text`
+  font-size: 16px;
+  color: #FFFFFF;
+  font-weight: bold;
+  padding: 24px 16px 8px 16px;
+`;
+const DescriptionContainer = Styled.View``;
+const Description = Styled.Text`
+  padding: 0 16px;
+  color: #FFFFFF;
+`;
+const SubInfoContainer = Styled.View``;
+const InfoContainer = Styled.View`
+  flex-direction: row;
+  justify-content: space-between;
+  padding: 0 16px;
+`;
+const LabelInfo = Styled.Text`
+  color: #FFFFFF;
+`;
+
+type ProfileScreenRouteProp = RouteProp<MovieNaviParamList, 'MovieDetail'>;
+interface Props {
+  route: ProfileScreenRouteProp;
+}
+
+const MovieDetail = ({route}: Props) => {
+  const [data, setData] = useState<IMovieDetail>();
+
+  useEffect(() => {
+    const {id} = route.params;
+    fetch(
+      `https://yts.lt/api/v2/movie_details.json?movie_id=${id}&with_images=true&with_cast=true`,
+    )
+      .then((response) => response.json())
+      .then((json) => {
+        console.log(json);
+        setData(json.data.movie);
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+  }, []);
+
+  return data ? (
+    <Container>
+      <BigCatalog
+        id={data.id}
+        image={data.large_cover_image}
+        year={data.year}
+        title={data.title}
+        genres={data.genres}
+      />
+      <SubInfoContainer>
+        <ContainerTitle>영화 정보</ContainerTitle>
+        <InfoContainer>
+          <LabelInfo>{data.runtime}분</LabelInfo>
+          <LabelInfo>평점: {data.rating}</LabelInfo>
+          <LabelInfo>좋아요: {data.like_count}</LabelInfo>
+        </InfoContainer>
+      </SubInfoContainer>
+      <DescriptionContainer>
+        <ContainerTitle>줄거리</ContainerTitle>
+        <Description>{data.description_full}</Description>
+      </DescriptionContainer>
+      {data.cast && <CastList cast={data.cast} />}
+      <ScreenShotList
+        images={[
+          data.large_screenshot_image1,
+          data.large_screenshot_image2,
+          data.large_screenshot_image3,
+        ]}
+      />
+    </Container>
+  ) : (
+    <Loading />
+  );
+};
+
+export default MovieDetail;
+```
+
+### 17) CastList 컴포넌트 ScreenShotList 컴포넌트
 
