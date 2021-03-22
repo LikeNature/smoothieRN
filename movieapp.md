@@ -966,3 +966,108 @@ export default MovieDetail;
 
 ### 17) CastList 컴포넌트 ScreenShotList 컴포넌트
 
+```tsx
+// src\Screens\MovieDetail\CastList\index.tsx
+
+import React from 'react';
+import {FlatList} from 'react-native';
+import Styled from 'styled-components/native';
+
+const Container = Styled.View``;
+const Title = Styled.Text`
+  font-size: 16px;
+  color: #FFFFFF;
+  font-weight: bold;
+  padding: 24px 16px 8px 16px;
+`;
+const CastContainer = Styled.View`
+    padding: 0px 4px;
+`;
+const CastImage = Styled.Image``;
+const LabelName = Styled.Text`
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  padding: 4px 2px;
+  color: #FFFFFF;
+  font-size: 14px;
+  font-weight: bold;
+  text-align: center;
+`;
+interface Props {
+  cast: Array<ICast>;
+}
+
+const CastList = ({cast}: Props) => {
+  return (
+    <Container>
+      <Title>배우</Title>
+      <FlatList
+        horizontal={true}
+        data={cast}
+        keyExtractor={(item, index) => {
+          return `castList-${index}`;
+        }}
+        renderItem={({item, index}) => (
+          <CastContainer>
+            <CastImage
+              source={{uri: (item as ICast).url_small_image}}
+              style={{width: 100, height: 150}}
+            />
+            <LabelName>{(item as ICast).name}</LabelName>
+          </CastContainer>
+        )}
+      />
+    </Container>
+  );
+};
+
+export default CastList;
+```
+
+```tsx
+// src\Screens\MovieDetail\ScreenShotList\index.tsx
+import React from 'react';
+import {FlatList, Dimensions} from 'react-native';
+import Styled from 'styled-components/native';
+
+const Container = Styled.View`
+  margin-bottom: 24px;
+`;
+const Title = Styled.Text`
+  font-size: 16px;
+  color: #FFFFFF;
+  font-weight: bold;
+  padding: 24px 16px 8px 16px;
+`;
+const ScreenShotImage = Styled.Image``;
+
+interface Props {
+  images: Array<string>;
+}
+
+const ScreenShotList = ({images}: Props) => {
+  return (
+    <Container>
+      <Title>스크린샷</Title>
+      <FlatList
+        horizontal={true}
+        pagingEnabled={true}
+        data={images}
+        keyExtractor={(item, index) => {
+          return `screenShotList-${index}`;
+        }}
+        renderItem={({item, index}) => (
+          <ScreenShotImage
+            source={{uri: item}}
+            style={{width: Dimensions.get('window').width, height: 200}}
+          />
+        )}
+      />
+    </Container>
+  );
+};
+
+export default ScreenShotList;
+```
+
