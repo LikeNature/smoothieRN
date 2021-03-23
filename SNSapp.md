@@ -1721,3 +1721,887 @@ const FeedBody = ({ id, images }: Props) => {
 export default FeedBody;
 ```
 
+### 18) Feeds 컴포넌트
+
+```tsx
+// src\Screens\Feeds\index.tsx
+// 하단의 탭 컴포넌트에서 돋보기 아이콘을 선택하면 이미지 리스트만 보이는 Feeds 컴포넌트 표시하도록 탭 내비게이션 설정
+// Feeds 컴포넌트는 다른 컴포넌트들과 다르게 내비게이션 헤더에 검색 창 가지고 있음
+// IFeed RandomUserDataContext 컨텍스트 가져옴
+
+import React, {useContext, useState, useEffect} from 'react';
+import {StackNavigationProp} from '@react-navigation/stack';
+
+import {RandomUserDataContext} from '~/Context/RandomUserData';
+import ImageFeedList from '~/Components/ImageFeedList';
+
+type NavigationProp = StackNavigationProp<FeedsTabParamList, 'Feeds'>;
+interface Props {
+  navigation: NavigationProp;
+}
+
+// 
+const Feeds = ({navigation}: Props) => {
+  const {getMyFeed} = useContext(RandomUserDataContext);
+  // 변경이 가능한 State
+  const [feedList, setFeedList] = useState<Array<IFeed>>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+
+// 24개의 데이터  가져와 화면에 표시
+// onRefresh: 당겨서 새로고침
+// onEndReached: 무한스크롤에서 데이터 수정
+  useEffect(() => {
+    setFeedList(getMyFeed(24));
+  }, []);
+
+// navigation.navigate('FeedListOnly'); 피드 리스트만 표시하는 화면으로 이동
+// src\Screens\Navigator.tsx FeedsTab header에 특정 컴포넌트 반환하도록 설정
+  return (
+    <ImageFeedList
+      feedList={feedList}
+      loading={loading}
+      onRefresh={() => {
+        setLoading(true);
+        setTimeout(() => {
+          setFeedList(getMyFeed(24));
+          setLoading(false);
+        }, 2000);
+      }}
+      onEndReached={() => {
+        setFeedList([...feedList, ...getMyFeed(24)]);
+      }}
+      onPress={() => {
+        navigation.navigate('FeedListOnly');
+      }}
+    />
+  );
+};
+
+export default Feeds;
+```
+
+### 19) SearchBar 컴포넌트
+
+```tsx
+// src\Component\SearchBar\index.tsx
+// Feeds 컴포넌트 헤더에 표시하는 SearchBar 컴포넌트
+
+import React from 'react';
+import Styled from 'styled-components/native';
+
+import IconButton from '~/Components/IconButton';
+import Input from '~/Components/Input';
+
+const Container = Styled.SafeAreaView`
+  flex: 1;
+  flex-direction: row;
+  align-items: center;
+  background-color: #FEFFFF;
+`;
+
+const SearchBar = () => {
+  return (
+    <Container>
+      <Input style={{flex: 1, marginLeft: 8, height: 32}} placeholder="검색" />
+      <IconButton iconName="camera" />
+    </Container>
+  );
+};
+export default SearchBar;
+```
+
+### 20) ImageFeedList 컴포넌트
+
+```tsx
+// src\Component\ImageFeedList\index.tsx
+
+// 사용자 피드 이미지 중 첫 이미지만을 리스트로 표시
+// Feeds 컴포넌트와 Upload 컴포넌트에서 사용
+
+import React from 'react';
+import {
+  FlatList,
+  Image,
+  Dimensions,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
+} from 'react-native';
+
+import Styled from 'styled-components/native';
+
+const ImageContainer = Styled.TouchableHighlight`
+  background: #FEFFFF;
+  padding: 1px;
+`;
+
+interface Props {
+  id?: number;
+  bounces?: boolean;
+  scrollEnabled?: boolean;
+  feedList: Array<IFeed>;
+  loading?: boolean;
+  onRefresh?: () => void;
+  onEndReached?: () => void;
+  onScroll?: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
+  onPress?: () => void;
+}
+
+// 전달받은 이미지를 3줄로 표시하기 위해 Dimensions.get('window').width; 로 3등분하여 가로 길이 결정
+const ImageFeedList = ({
+  id,
+  bounces = true,
+  scrollEnabled = true,
+  feedList,
+  loading,
+  onRefresh,
+  onEndReached,
+  onScroll,
+  onPress,
+}: Props) => {
+  const width = Dimensions.get('window').width;
+  const imageWidth = width / 3;
+
+// 화면에 표시되는 이미지 테두리를 이미지 표시 위취에 따라 왼쪽 또는 오른쪽에 표시
+//       paddingLeft: index % 3 === 0 ? 0 : 1,
+//       paddingRight: index % 3 === 2 ? 0 : 1,
+  return (
+    <FlatList
+      data={feedList}
+      style={{ width }}
+      keyExtractor={(item, index) => {
+        return `image-feed-${id}-${index}`;
+      }}
+      showsVerticalScrollIndicator={false}
+      scrollEnabled={scrollEnabled}
+      bounces={bounces}
+      numColumns={3}
+      onRefresh={onRefresh}
+      onEndReached={onEndReached}
+      onEndReachedThreshold={0.5}
+      refreshing={loading}
+      onScroll={onScroll}
+      scrollEventThrottle={400}
+      renderItem={({ item, index }) => (
+        <ImageContainer
+          style={{
+            paddingLeft: index % 3 === 0 ? 0 : 1,
+            paddingRight: index % 3 === 2 ? 0 : 1,
+          }}
+          onPress={onPress}>
+          <Image
+            source={{ uri: item.images[0] }}
+            style={{ width: imageWidth, height: imageWidth }}
+          />
+        </ImageContainer>
+      )}
+    />
+  );
+};
+
+export default ImageFeedList;
+```
+
+### 21) FeedListOnly 컴포넌트
+
+```tsx
+// src\Screens\FeedListOnly\index.tsx
+// Feeds 컴포넌트 이미지 리스트에서 이미지 선택하면 피드 리스트만을 표시하는 둘러보기 화면
+
+import React, {useContext, useState, useEffect} from 'react';
+import {FlatList} from 'react-native';
+
+import {RandomUserDataContext} from '~/Context/RandomUserData';
+import Feed from '~/Components/Feed';
+
+const FeedListOnly = () => {
+  const {getMyFeed} = useContext(RandomUserDataContext);
+  const [feedList, setFeedList] = useState<Array<IFeed>>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+
+  useEffect(() => {
+    setFeedList(getMyFeed());
+  }, []);
+
+  return (
+    <FlatList
+      data={feedList}
+      keyExtractor={(item, index) => {
+        return `myfeed-${index}`;
+      }}
+      showsVerticalScrollIndicator={false}
+      onRefresh={() => {
+        setLoading(true);
+        setTimeout(() => {
+          setFeedList(getMyFeed());
+          setLoading(false);
+        }, 2000);
+      }}
+      onEndReached={() => {
+        setFeedList([...feedList, ...getMyFeed()]);
+      }}
+      onEndReachedThreshold={0.5}
+      refreshing={loading}
+      renderItem={({item, index}) => (
+        <Feed
+          id={index}
+          name={item.name}
+          photo={item.photo}
+          description={item.description}
+          images={item.images}
+        />
+      )}
+    />
+  );
+};
+
+export default FeedListOnly;
+```
+
+### 22) Upload 컴포넌트
+
+```tsx
+// src\Screens\Upload\index.tsx
+
+// 사용자 단말기 이미지 보여주고, 해당 이미지 선택하면 업로드 하는 컴포넌트
+// 업로드 기능은 구현하지 않음
+// 단순히 ImageFeedList 표시
+
+import React, {useContext, useState, useEffect} from 'react';
+import {RandomUserDataContext} from '~/Context/RandomUserData';
+import ImageFeedList from '~/Components/ImageFeedList';
+
+const Upload = () => {
+  const {getMyFeed} = useContext(RandomUserDataContext);
+  const [feedList, setFeedList] = useState<Array<IFeed>>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+
+  useEffect(() => {
+    setFeedList(getMyFeed(24));
+  }, []);
+
+  return (
+    <ImageFeedList
+      feedList={feedList}
+      loading={loading}
+      onRefresh={() => {
+        setLoading(true);
+        setTimeout(() => {
+          setFeedList(getMyFeed(24));
+          setLoading(false);
+        }, 2000);
+      }}
+      onEndReached={() => {
+        setFeedList([...feedList, ...getMyFeed(24)]);
+      }}
+    />
+  );
+};
+
+export default Upload;
+
+
+```
+
+### 23) Notification  컴포넌트
+
+```tsx
+// src\Screens\Notification\index.tsx
+// 사용자가 좋아요, 팔로우 버튼 눌렀을 때, 알림 보여주는 컴포넌트
+import React, {useContext, useState, useEffect, createRef} from 'react';
+import {
+  Dimensions,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
+  ScrollView,
+} from 'react-native';
+
+import Styled from 'styled-components/native';
+
+import {RandomUserDataContext} from '~/Context/RandomUserData';
+import Tab from '~/Components/Tab';
+import NotificationList from './NotificationList';
+
+const ProfileTabContainer = Styled.SafeAreaView`
+  flex-direction: row;
+  background-color: #FEFFFF;
+`;
+
+const TabContainer = Styled.View`
+  width: 100%;
+  height: ${Dimensions.get('window').height}px;
+`;
+
+interface Props {}
+
+// Notification 컴포넌트는 탭으로 구성
+// createRef 는 컴포넌트 외부에서 컴포넌트를 직접 컨트롤해 컴포넌트의 이벤트 또는 함수 다룰 때 사용
+// 여기에서는 ScrollView를 직접 컨트롤해 선택된 탭으로 스크롤 시켜 해당하는 화면 표시하도록 설정
+
+const Notification = ({}: Props) => {
+  const {getMyFeed} = useContext(RandomUserDataContext);
+  const [followingList, setFollowingList] = useState<Array<IFeed>>([]);
+  const [myNotifications, setMyNotifications] = useState<Array<IFeed>>([]);
+  const [tabIndex, setTabIndex] = useState<number>(1);
+  const width = Dimensions.get('window').width;
+  const tabs = ['팔로잉', '내 소식'];
+  const refScrollView = createRef<ScrollView>();
+
+  useEffect(() => {
+    setFollowingList(getMyFeed(24));
+    setMyNotifications(getMyFeed(24));
+  }, []);
+
+  return (
+    <TabContainer>
+      <ProfileTabContainer>
+        {tabs.map((label: string, index: number) => (
+          <Tab
+            key={`tab-${index}`}
+            selected={tabIndex === index}
+            label={label}
+            onPress={() => {
+              setTabIndex(index);
+              const node = refScrollView.current;
+              if (node) {
+                node.scrollTo({x: width * index, y: 0, animated: true});
+              }
+            }}
+          />
+        ))}
+      </ProfileTabContainer>
+      <ScrollView
+        ref={refScrollView}
+        horizontal={true}
+        showsHorizontalScrollIndicator={false}
+        pagingEnabled={true}
+        stickyHeaderIndices={[0]}
+        onScroll={(event: NativeSyntheticEvent<NativeScrollEvent>) => {
+          const index = event.nativeEvent.contentOffset.x / width;
+          setTabIndex(index);
+        }}
+        contentOffset={{x: width, y: 0}}>
+        <NotificationList
+          id={0}
+          width={width}
+          data={followingList}
+          onEndReached={() => {
+            setFollowingList([...followingList, ...getMyFeed(24)]);
+          }}
+        />
+        <NotificationList
+          id={1}
+          width={width}
+          data={myNotifications}
+          onEndReached={() => {
+            setMyNotifications([...myNotifications, ...getMyFeed(24)]);
+          }}
+        />
+      </ScrollView>
+    </TabContainer>
+  );
+};
+
+export default Notification;
+```
+
+### 24) Notification  컴포넌트
+
+```tsx
+// src\Screens\Notification\NotificationList\index.tsx
+// Notification 컴포넌트에서 탭 하단에서 실제로 알림 리스트를 보여주는 컴포넌트
+import React from 'react';
+import {FlatList} from 'react-native';
+
+import Styled from 'styled-components/native';
+
+const NotificationContainer = Styled.View`
+  flex-direction: row;
+  padding: 8px 16px;
+  align-items: center;
+`;
+const ProfileImage = Styled.Image`
+  border-radius: 40px;
+`;
+const LabelName = Styled.Text`
+  font-weight: bold;
+`;
+const Message = Styled.Text`
+  flex: 1;
+  padding:0 16px;
+`;
+const PostImage = Styled.Image``;
+
+interface Props {
+  id: number;
+  width: number;
+  data: Array<IFeed>;
+  onEndReached: () => void;
+}
+
+const NotificationList = ({id, width, data, onEndReached}: Props) => {
+  return (
+    <FlatList
+      data={data}
+      style={{width}}
+      keyExtractor={(item, index) => {
+        return `notification-${id}-${index}`;
+      }}
+      showsVerticalScrollIndicator={false}
+      onEndReached={onEndReached}
+      onEndReachedThreshold={0.5}
+      renderItem={({item, index}) => (
+        <NotificationContainer>
+          <ProfileImage
+            source={{uri: item.photo}}
+            style={{width: 50, height: 50}}
+          />
+          <Message numberOfLines={2}>
+            <LabelName>{item.name}</LabelName>님이 회원님 게시물을 좋아합니다.
+          </Message>
+          <PostImage
+            source={{uri: item.images[0]}}
+            style={{width: 50, height: 50}}
+          />
+        </NotificationContainer>
+      )}
+    />
+  );
+};
+
+export default NotificationList;
+```
+
+### 25) Profile 컴포넌트
+
+```tsx
+// src\Screens\Profile\index.tsx
+
+// 메인 탭 내비게이션 마지막 탭
+// 사용자의 프로필 정보와 사용자가 가지고 있는 이미지 리스트 표시
+import React, {useState, useContext, useLayoutEffect, useEffect} from 'react';
+import {
+  NativeScrollEvent,
+  Image,
+  Dimensions,
+  NativeSyntheticEvent,
+  ScrollView,
+  ImageSourcePropType,
+} from 'react-native';
+import Styled from 'styled-components/native';
+import {StackNavigationProp} from '@react-navigation/stack';
+import {DrawerActions} from '@react-navigation/native';
+
+import {RandomUserDataContext} from '~/Context/RandomUserData';
+
+import IconButton from '~/Components/IconButton';
+import Tab from '~/Components/Tab';
+import ProfileHeader from './ProfileHeader';
+import ProfileBody from './ProfileBody';
+
+const ProfileTabContainer = Styled.View`
+  flex-direction: row;
+  background-color: #FEFFFF;
+`;
+
+const FeedContainer = Styled.View`
+  flex-direction: row;
+  flex-wrap: wrap;
+`;
+
+const ImageContainer = Styled.TouchableHighlight`
+  background: #FEFFFF;
+  padding: 1px;
+`;
+
+type NavigationProp = StackNavigationProp<ProfileTabParamList, 'Profile'>;
+interface Props {
+  navigation: NavigationProp;
+}
+
+const Profile = ({navigation}: Props) => {
+  const {getMyFeed} = useContext(RandomUserDataContext);
+  const [feedList, setFeedList] = useState<Array<IFeed>>([]);
+  const imageWidth = Dimensions.get('window').width / 3;
+  const tabs = [
+    require('~/Assets/Images/ic_grid_image_focus.png'),
+    require('~/Assets/Images/ic_tag_image.png'),
+  ];
+
+    // 내비게이션 헤더 오른쪽에 메뉴버튼 추가하고, 누르면 메뉴가 표시되도록 설정
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <IconButton
+          iconName="menu"
+          onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
+        />
+      ),
+    });
+  }, []);
+
+  useEffect(() => {
+    setFeedList(getMyFeed(24));
+  }, []);
+
+  const isBottom = ({
+    layoutMeasurement,
+    contentOffset,
+    contentSize,
+  }: NativeScrollEvent) => {
+    return layoutMeasurement.height + contentOffset.y >= contentSize.height;
+  };
+
+// stickyHeaderIndices: 리스트 특정아이템을 상단부분 고정하기 위해 설정(인덱스)
+// ScrollView 는 FlatList 와 다르게  onEndReached를 Props로 가지고 있지 않음
+// onScroll 이벤트 활용해 무한 스크롤 구현
+// ScrollView  사용해 컴포넌트 표시할 때, onScroll 활용해 추가적인 정보 가져와 표시
+  return (
+    <ScrollView
+      stickyHeaderIndices={[2]}
+      onScroll={(event: NativeSyntheticEvent<NativeScrollEvent>) => {
+        if (isBottom(event.nativeEvent)) {
+          setFeedList([...feedList, ...getMyFeed(24)]);
+        }
+      }}>
+      <ProfileHeader
+        image="http://api.randomuser.me/portraits/women/68.jpg"
+        posts={3431}
+        follower={6530}
+        following={217}
+      />
+      <ProfileBody
+        name="Sara Lambert"
+        description="On Friday, April 14, being Good-Friday, I repaired to him in the\nmorning, according to my usual custom on that day, and breakfasted\nwith him. I observed that he fasted so very strictly, that he did not\neven taste bread, and took no milk with his tea; I suppose because it\nis a kind of animal food."
+      />
+      <ProfileTabContainer>
+        {tabs.map((image: ImageSourcePropType, index: number) => (
+          <Tab
+            key={`tab-${index}`}
+            selected={index === 0}
+            imageSource={image}
+          />
+        ))}
+      </ProfileTabContainer>
+      <FeedContainer>
+        {feedList.map((feed: IFeed, index: number) => (
+          <ImageContainer
+            key={`feed-list-${index}`}
+            style={{
+              paddingLeft: index % 3 === 0 ? 0 : 1,
+              paddingRight: index % 3 === 2 ? 0 : 1,
+              width: imageWidth,
+            }}>
+            <Image
+              source={{uri: feed.images[0]}}
+              style={{width: imageWidth, height: imageWidth}}
+            />
+          </ImageContainer>
+        ))}
+      </FeedContainer>
+    </ScrollView>
+  );
+};
+
+export default Profile;
+```
+
+### 26) ProfileHeader 컴포넌트
+
+```tsx
+
+// src\Screens\Profile\ProfileHeader\index.tsx
+// Profile 컴포넌트 상단에 사용자 이미지, 게시물, 팔로워, 팔로잉 수, 프로필 수정 버튼 역할
+
+import React from 'react';
+import Styled from 'styled-components/native';
+
+import Button from '~/Components/Button';
+
+const Container = Styled.View`
+  flex-direction: row;
+`;
+const ProfileImageContainer = Styled.View`
+  padding: 16px;
+`;
+const ProfileImage = Styled.Image`
+  border-radius: 100px;
+`;
+const ProfileContent = Styled.View`
+  flex: 1;
+  padding: 16px;
+  justify-content: space-around;
+`;
+const LabelContainer = Styled.View`
+  flex-direction: row;
+`;
+
+const ProfileItem = Styled.View`
+  flex: 1;
+  align-items: center;
+`;
+const LabelCount = Styled.Text`
+  font-size: 16px;
+  font-weight: bold;
+`;
+const LabelTitle = Styled.Text`
+  font-weight: 300;
+`;
+interface Props {
+  image: string;
+  posts: number;
+  follower: number;
+  following: number;
+}
+
+const ProfileHeader = ({image, posts, follower, following}: Props) => {
+  return (
+    <Container>
+      <ProfileImageContainer>
+        <ProfileImage source={{uri: image}} style={{width: 100, height: 100}} />
+      </ProfileImageContainer>
+      <ProfileContent>
+        <LabelContainer>
+          <ProfileItem>
+            <LabelCount>{posts}</LabelCount>
+            <LabelTitle>게시물</LabelTitle>
+          </ProfileItem>
+          <ProfileItem>
+            <LabelCount>{follower}</LabelCount>
+            <LabelTitle>팔로워</LabelTitle>
+          </ProfileItem>
+          <ProfileItem>
+            <LabelCount>{follower}</LabelCount>
+            <LabelTitle>팔로잉</LabelTitle>
+          </ProfileItem>
+        </LabelContainer>
+        <Button
+          label="프로필 수정"
+          style={{
+            borderRadius: 4,
+            backgroundColor: '#FEFFFF',
+            borderWidth: 1,
+            borderColor: '#D3D3D3',
+            height: 32,
+          }}
+          color="#292929"
+        />
+      </ProfileContent>
+    </Container>
+  );
+};
+
+export default ProfileHeader;
+```
+
+### 27) ProfileBody 컴포넌트
+
+```tsx
+// src\Screens\Profile\ProfileBody\index.tsx
+
+// Profile 컴포넌트 상단에 사용자 이름과 설명문 표시하는 역할
+
+import React from 'react';
+import Styled from 'styled-components/native';
+
+const Container = Styled.View`
+  padding: 0 16px 8px 16px;
+  border-bottom-width: 1px;
+  border-color: #D3D3D3;
+`;
+const LabelName = Styled.Text`
+  font-weight: bold;
+  margin-bottom: 8px;
+`;
+const LabelDescription = Styled.Text`
+  line-height: 20px;
+`;
+
+interface Props {
+  name: string;
+  description?: string;
+}
+
+const ProfileBody = ({ name, description }: Props) => {
+  return (
+    <Container>
+      <LabelName>{name}</LabelName>
+      <LabelDescription numberOfLines={5}>{description}</LabelDescription>
+    </Container>
+  );
+};
+
+export default ProfileBody;
+```
+
+### 28) Drawer 컴포넌트
+
+```tsx
+// src\Screens\Drawer\index.tsx
+
+// src\Screens\Navigator.tsx 에서 Drawer 설정
+// 전체화면을 슬라이드 시키면서 표시
+// drawerContent 이 Drawer 컴포넌트 설정하여, 커스텀 드로어 컴포넌트 화면에 표시
+
+/*
+const MainNavigator = () => {
+  return (
+    <Drawer.Navigator
+      drawerPosition="right"
+      drawerType="slide"
+      drawerContent={(props) => <CustomDrawer props={props} />}>
+      <Drawer.Screen name="MainTabs" component={MainTabs} />
+    </Drawer.Navigator>
+  );
+};
+*/
+
+import React, {useContext} from 'react';
+import Styled from 'styled-components/native';
+import {
+  DrawerContentScrollView,
+  DrawerContentComponentProps,
+  DrawerContentOptions,
+} from '@react-navigation/drawer';
+
+import {UserContext} from '~/Context/User';
+
+const Header = Styled.View`
+  border-bottom-width: 1px;
+  border-color: #D3D3D3;
+  padding: 8px 16px;
+`;
+const Title = Styled.Text``;
+const Button = Styled.TouchableHighlight`
+  padding: 8px 16px;
+`;
+const ButtonContainer = Styled.View`
+  flex-direction: row;
+  align-items: center;
+`;
+const Icon = Styled.Image`
+  margin-right: 8px;
+`;
+const Label = Styled.Text`
+  font-size: 16px;
+`;
+const Footer = Styled.View`
+  width: 100%;
+  border-top-width: 1px;
+  border-color: #D3D3D3;
+`;
+
+interface Props {
+  props: DrawerContentComponentProps<DrawerContentOptions>;
+}
+
+const Drawer = ({props}: Props) => {
+  const {logout} = useContext<IUserContext>(UserContext);
+
+  return (
+    <DrawerContentScrollView {...props}>
+      <Header>
+        <Title>Sara Lambert</Title>
+      </Header>
+      <Button>
+        <ButtonContainer>
+          <Icon source={require('~/Assets/Images/ic_camera.png')} />
+          <Label>사진</Label>
+        </ButtonContainer>
+      </Button>
+      <Button>
+        <ButtonContainer>
+          <Icon source={require('~/Assets/Images/ic_live.png')} />
+          <Label>라이브</Label>
+        </ButtonContainer>
+      </Button>
+      <Button>
+        <ButtonContainer>
+          <Icon
+            source={require('~/Assets/Images/Tabs/ic_favorite_outline.png')}
+          />
+          <Label>팔로워</Label>
+        </ButtonContainer>
+      </Button>
+      <Footer>
+        <Button
+          onPress={() => {
+            logout();
+          }}>
+          <ButtonContainer>
+            <Icon
+              source={require('~/Assets/Images/Tabs/ic_profile_outline.png')}
+            />
+            <Title>로그아웃</Title>
+          </ButtonContainer>
+        </Button>
+      </Footer>
+    </DrawerContentScrollView>
+  );
+};
+
+export default Drawer;
+```
+
+
+
+## 3. 에러처리
+
+### Violation: Turbo Module Registry.set Enforcing(...)
+
+```bash
+# 에러메시지
+Invariant Violation: TurboModuleRegistry.getEnforcing(...): 'NativeReanimated' could not be found. Verify that a module by this name is registered in the native binary., js engine: hermes
+```
+
+### Solution
+
+- 참조문서 : https://docs.swmansion.com/react-native-reanimated/docs/animations
+
+#### 1. Installing the package
+
+```bash
+yarn add react-native-reanimated@next
+```
+
+#### 2. Babel plugin
+
+```js
+  module.exports = {
+      ...
+      plugins: [
+          ...
+          'react-native-reanimated/plugin',
+      ],
+  };
+```
+
+#### 3. Android
+
+```groovy
+// 1. Turn on Hermes engine by editing android/app/build.gradle
+project.ext.react = [
+  enableHermes: true  // <- here | clean and rebuild if changing
+]
+```
+
+```java
+// 2. Plug Reanimated in MainApplication.java
+import com.facebook.react.bridge.JSIModulePackage; // <- add
+  import com.swmansion.reanimated.ReanimatedJSIModulePackage; // <- add
+  ...
+  private final ReactNativeHost mReactNativeHost = new ReactNativeHost(this) {
+  ...
+
+      @Override
+      protected String getJSMainModuleName() {
+        return "index";
+      }
+
+      @Override
+      protected JSIModulePackage getJSIModulePackage() {
+        return new ReanimatedJSIModulePackage(); // <- add
+      }
+    };
+  ...
+```
+
