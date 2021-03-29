@@ -41,6 +41,7 @@ yarn add typescript @types/react @types/react-native @types/styled-components ba
 ```
 
 ```js
+// babel.config.js
 // 절대 경로로 컴포넌트 추가하기 위한 설정
 module.exports = {
   presets: ['module:metro-react-native-babel-preset'],
