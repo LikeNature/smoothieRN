@@ -1549,59 +1549,75 @@ export default IconButton;
 ### 16) Feed 컴포넌트
 
 ```tsx
-// src\Component\IconButton\index.tsx
+// src\Component\Feed\index.tsx
 
-// Props를 통해,부모 컴포넌트로부터 지정된 아이콘 이미지 이름을 전달받아, 해당 아이콘 이미지를 표시
-// 부모 컴포넌트로부터의 Props를 통해 사용자 프로필 정보 표시하는 헤더, 사용자 이미지 리스트를 표시하는 Body, 마지막으로 피드에 대한 설명을 표시하는 풋터로 나누어 표시
 import React from 'react';
 import Styled from 'styled-components/native';
 
-const Container = Styled.TouchableOpacity`
-  padding: 8px;
+import IconButton from '~/Components/IconButton';
+import FeedBody from './FeedBody';
+
+const Container = Styled.View`
+  padding: 8px 0px;
 `;
-const Icon = Styled.Image`
+const FeedHeader = Styled.View`
+  flex-direction: row;
+  padding: 8px 16px;
+  justify-content: space-between;
 `;
+const ProfileContainer = Styled.View`
+  flex-direction: row;
+  align-items: center;
+`;
+const ProfileImage = Styled.Image`
+  border-radius: 48px;
+  border-width: 1px;
+  border-color: #D3D3D3;
+`;
+const UserName = Styled.Text`
+  font-weight: bold;
+  margin-left: 8px;
+`;
+const FeedFooter = Styled.View`
+  padding: 0px 8px;
+`;
+const Description = Styled.Text``;
 
 interface Props {
-  iconName:
-    | 'camera'
-    | 'live'
-    | 'send'
-    | 'dotMenu'
-    | 'favorite'
-    | 'comment'
-    | 'bookmark'
-    | 'menu';
-  style?: object;
-  onPress?: () => void;
+  id: number;
+  name: string;
+  photo: string;
+  description: string;
+  images: Array<string>;
 }
 
-const IconButton = ({ iconName, style, onPress }: Props) => {
-  const imageSource = {
-    camera: require('~/Assets/Images/ic_camera.png'),
-    live: require('~/Assets/Images/ic_live.png'),
-    send: require('~/Assets/Images/ic_send.png'),
-    dotMenu: require('~/Assets/Images/ic_dot_menu.png'),
-    favorite: require('~/Assets/Images/Tabs/ic_favorite_outline.png'),
-    comment: require('~/Assets/Images/ic_comment.png'),
-    bookmark: require('~/Assets/Images/ic_bookmark.png'),
-    menu: require('~/Assets/Images/ic_menu.png'),
-  };
-
+const Feed = ({ id, name, photo, description, images }: Props) => {
   return (
-    <Container
-      style={style}
-      onPress={() => {
-        if (onPress && typeof onPress === 'function') {
-          onPress();
-        }
-      }}>
-      <Icon source={imageSource[iconName]} />
+    <Container>
+      <FeedHeader>
+        <ProfileContainer>
+          <ProfileImage
+            source={{
+              uri: photo,
+            }}
+            style={{ width: 32, height: 32 }}
+          />
+          <UserName>{name}</UserName>
+        </ProfileContainer>
+        <IconButton iconName="dotMenu" />
+      </FeedHeader>
+      <FeedBody id={id} images={images} />
+      <FeedFooter>
+        <Description numberOfLines={2}>
+          <UserName>{name} </UserName>
+          {description}
+        </Description>
+      </FeedFooter>
     </Container>
   );
 };
 
-export default IconButton;
+export default Feed;
 ```
 
 ### 17) FeedBody 컴포넌트
