@@ -160,6 +160,7 @@ yarn add @react-navigation/stack @react-navigation/drawer @react-navigation/bott
 yarn add @react-native-community/async-storage
 
 # 앱 아이콘과 스플래시 이미지 생성위한 react-native-make 라이브러리 설치
+# !! 관리자권한으로 실행해야함
 yarn add @bam.tech/react-native-make
 yarn add react-native-splash-screen
 
